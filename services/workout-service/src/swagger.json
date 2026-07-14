@@ -1,0 +1,101 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Workout Service API",
+    "version": "1.0.0",
+    "description": "CRUD operations for running workouts"
+  },
+  "servers": [{ "url": "/" }],
+  "paths": {
+    "/workouts": {
+      "post": {
+        "tags": ["Workouts"],
+        "summary": "Create a workout",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["distanceKm", "durationMin"],
+                "properties": {
+                  "date": { "type": "string", "format": "date" },
+                  "distanceKm": { "type": "number" },
+                  "durationMin": { "type": "integer" },
+                  "elevationM": { "type": "integer" },
+                  "notes": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Workout created" },
+          "400": { "description": "Invalid input" }
+        }
+      },
+      "get": {
+        "tags": ["Workouts"],
+        "summary": "List workouts",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "from", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "to", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": { "200": { "description": "List of workouts" } }
+      }
+    },
+    "/workouts/{id}": {
+      "get": {
+        "tags": ["Workouts"],
+        "summary": "Get workout by ID",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "Workout data" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "put": {
+        "tags": ["Workouts"],
+        "summary": "Update workout",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "distanceKm": { "type": "number" },
+                  "durationMin": { "type": "integer" },
+                  "elevationM": { "type": "integer" },
+                  "notes": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Workout updated" } }
+      },
+      "delete": {
+        "tags": ["Workouts"],
+        "summary": "Delete workout",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "204": { "description": "Deleted" },
+          "404": { "description": "Not found" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    }
+  }
+}

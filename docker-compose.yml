@@ -1,0 +1,123 @@
+services:
+  # ── Databases ──
+  auth-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+      - ./services/auth-service/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d authdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  workout-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: workoutdb
+      POSTGRES_USER: workout_user
+      POSTGRES_PASSWORD: ${WORKOUT_DB_PASSWORD}
+    volumes:
+      - workout-db-data:/var/lib/postgresql/data
+      - ./services/workout-service/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U workout_user -d workoutdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  stats-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: statsdb
+      POSTGRES_USER: stats_user
+      POSTGRES_PASSWORD: ${STATS_DB_PASSWORD}
+    volumes:
+      - stats-db-data:/var/lib/postgresql/data
+      - ./services/stats-service/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stats_user -d statsdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Cache ──
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Microservizi ──
+  auth-service:
+    build: ./services/auth-service
+    ports:
+      - "3001"
+    environment:
+      DATABASE_URL: postgresql://auth_user:${AUTH_DB_PASSWORD}@auth-db:5432/authdb
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 3001
+    depends_on:
+      auth-db:
+        condition: service_healthy
+
+  workout-service:
+    build: ./services/workout-service
+    ports:
+      - "3002"
+    environment:
+      DATABASE_URL: postgresql://workout_user:${WORKOUT_DB_PASSWORD}@workout-db:5432/workoutdb
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 3002
+    depends_on:
+      workout-db:
+        condition: service_healthy
+
+  stats-service:
+    build: ./services/stats-service
+    ports:
+      - "3003"
+    environment:
+      DATABASE_URL: postgresql://stats_user:${STATS_DB_PASSWORD}@stats-db:5432/statsdb
+      REDIS_HOST: redis
+      JWT_SECRET: ${JWT_SECRET}
+      WORKOUT_SERVICE_URL: http://workout-service:3002
+      PORT: 3003
+    depends_on:
+      stats-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      workout-service:
+        condition: service_started
+
+  # ── Reverse Proxy ──
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - auth-service
+      - workout-service
+      - stats-service
+
+  # ── Frontend ──
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173"
+    environment:
+      VITE_API_URL: ""
+
+volumes:
+  auth-db-data:
+  workout-db-data:
+  stats-db-data:

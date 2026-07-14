@@ -1,0 +1,79 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Stats Service API",
+    "version": "1.0.0",
+    "description": "Aggregated statistics and personal records for Running Platform"
+  },
+  "servers": [{ "url": "/" }],
+  "paths": {
+    "/stats/weekly": {
+      "get": {
+        "tags": ["Stats"],
+        "summary": "Get weekly statistics",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "weeks", "in": "query", "schema": { "type": "integer", "default": 4 } }
+        ],
+        "responses": { "200": { "description": "Weekly stats" } }
+      }
+    },
+    "/stats/monthly": {
+      "get": {
+        "tags": ["Stats"],
+        "summary": "Get monthly statistics",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "months", "in": "query", "schema": { "type": "integer", "default": 3 } }
+        ],
+        "responses": { "200": { "description": "Monthly stats" } }
+      }
+    },
+    "/stats/personal-bests": {
+      "get": {
+        "tags": ["Stats"],
+        "summary": "Get personal bests",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Personal records" } }
+      }
+    },
+    "/stats/progress": {
+      "get": {
+        "tags": ["Stats"],
+        "summary": "Get progress compared to previous period",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "metric", "in": "query", "schema": { "type": "string", "enum": ["distance", "duration", "count"], "default": "distance" } },
+          { "name": "period", "in": "query", "schema": { "type": "string", "enum": ["weekly", "monthly"], "default": "monthly" } }
+        ],
+        "responses": { "200": { "description": "Progress data" } }
+      }
+    },
+    "/stats/ingest": {
+      "post": {
+        "tags": ["Stats"],
+        "summary": "Invalidate cache (webhook from workout service)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": { "type": "string" },
+                  "workout": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Cache invalidated" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    }
+  }
+}
