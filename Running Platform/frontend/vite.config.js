@@ -6,11 +6,5 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 5173,
-    proxy: {
-      "/auth": "http://nginx:80",
-      "/profiles": "http://nginx:80",
-      "/workouts": "http://nginx:80",
-      "/stats": "http://nginx:80",
-    },
   },
 });

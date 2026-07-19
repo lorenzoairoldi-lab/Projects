@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const api = axios.create({ baseURL: "/" });
+const api = axios.create({ baseURL: "/api" });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
@@ -15,7 +15,7 @@ api.interceptors.response.use(
       const refresh = localStorage.getItem("refreshToken");
       if (refresh) {
         try {
-          const { data } = await axios.post("/auth/refresh", { refreshToken: refresh });
+          const { data } = await axios.post("/api/auth/refresh", { refreshToken: refresh });
           localStorage.setItem("token", data.accessToken);
           localStorage.setItem("refreshToken", data.refreshToken);
           err.config.headers.Authorization = `Bearer ${data.accessToken}`;
@@ -33,6 +33,8 @@ api.interceptors.response.use(
   }
 );
 
+// ── Auth ──
+
 export async function login(email, password) {
   const { data } = await api.post("/auth/login", { email, password });
   localStorage.setItem("token", data.accessToken);
@@ -47,6 +49,26 @@ export async function register(email, password, name) {
   return data;
 }
 
+export async function logout() {
+  const refreshToken = localStorage.getItem("refreshToken");
+  try { await api.post("/auth/logout", { refreshToken }); } catch {}
+  localStorage.clear();
+}
+
+// ── Profile ──
+
+export async function getProfile() {
+  const { data } = await api.get("/profiles/me");
+  return data;
+}
+
+export async function updateProfile(profile) {
+  const { data } = await api.put("/profiles/me", profile);
+  return data;
+}
+
+// ── Workouts ──
+
 export async function getWorkouts(page = 1, limit = 20) {
   const { data } = await api.get("/workouts", { params: { page, limit } });
   return data;
@@ -57,9 +79,16 @@ export async function createWorkout(workout) {
   return data;
 }
 
+export async function updateWorkout(id, workout) {
+  const { data } = await api.put(`/workouts/${id}`, workout);
+  return data;
+}
+
 export async function deleteWorkout(id) {
   await api.delete(`/workouts/${id}`);
 }
+
+// ── Stats ──
 
 export async function getWeeklyStats(weeks = 4) {
   const { data } = await api.get("/stats/weekly", { params: { weeks } });
@@ -79,10 +108,4 @@ export async function getPersonalBests() {
 export async function getProgress(metric = "distance", period = "monthly") {
   const { data } = await api.get("/stats/progress", { params: { metric, period } });
   return data;
-}
-
-export async function logout() {
-  const refreshToken = localStorage.getItem("refreshToken");
-  try { await api.post("/auth/logout", { refreshToken }); } catch {}
-  localStorage.clear();
 }

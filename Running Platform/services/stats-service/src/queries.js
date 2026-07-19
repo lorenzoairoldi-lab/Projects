@@ -1,66 +1,68 @@
-const { pool } = require("./database");
+function createQueries(pool) {
+  // ── Weekly Stats ──
 
-// ── Weekly Stats ──
+  async function getWeeklyStats(userId, weeks = 4) {
+    const { rows } = await pool.query(
+      `SELECT * FROM weekly_stats WHERE user_id = $1 ORDER BY week_start DESC LIMIT $2`,
+      [userId, weeks]
+    );
+    return rows;
+  }
 
-async function getWeeklyStats(userId, weeks = 4) {
-  const { rows } = await pool.query(
-    `SELECT * FROM weekly_stats WHERE user_id = $1 ORDER BY week_start DESC LIMIT $2`,
-    [userId, weeks]
-  );
-  return rows;
+  async function upsertWeeklyStats(userId, weekStart, totals) {
+    await pool.query(
+      `INSERT INTO weekly_stats (user_id, week_start, total_distance_km, total_duration_min, workout_count)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (user_id, week_start) DO UPDATE
+       SET total_distance_km = $3, total_duration_min = $4, workout_count = $5`,
+      [userId, weekStart, totals.distanceKm, totals.durationMin, totals.count]
+    );
+  }
+
+  // ── Monthly Stats ──
+
+  async function getMonthlyStats(userId, months = 3) {
+    const { rows } = await pool.query(
+      `SELECT * FROM monthly_stats WHERE user_id = $1 ORDER BY month_start DESC LIMIT $2`,
+      [userId, months]
+    );
+    return rows;
+  }
+
+  async function upsertMonthlyStats(userId, monthStart, totals) {
+    await pool.query(
+      `INSERT INTO monthly_stats (user_id, month_start, total_distance_km, total_duration_min, workout_count)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (user_id, month_start) DO UPDATE
+       SET total_distance_km = $3, total_duration_min = $4, workout_count = $5`,
+      [userId, monthStart, totals.distanceKm, totals.durationMin, totals.count]
+    );
+  }
+
+  // ── Personal Bests ──
+
+  async function getPersonalBests(userId) {
+    const { rows } = await pool.query(
+      "SELECT * FROM personal_bests WHERE user_id = $1 ORDER BY metric", [userId]
+    );
+    return rows;
+  }
+
+  async function upsertPersonalBest(userId, metric, value, achievedDate) {
+    await pool.query(
+      `INSERT INTO personal_bests (user_id, metric, value, achieved_date)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, metric) DO UPDATE
+       SET value = $3, achieved_date = $4`,
+      [userId, metric, value, achievedDate]
+    );
+  }
+
+  return {
+    getWeeklyStats, upsertWeeklyStats,
+    getMonthlyStats, upsertMonthlyStats,
+    getPersonalBests, upsertPersonalBest,
+  };
 }
 
-async function upsertWeeklyStats(userId, weekStart, totals) {
-  await pool.query(
-    `INSERT INTO weekly_stats (user_id, week_start, total_distance_km, total_duration_min, workout_count)
-     VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (user_id, week_start) DO UPDATE
-     SET total_distance_km = $3, total_duration_min = $4, workout_count = $5`,
-    [userId, weekStart, totals.distanceKm, totals.durationMin, totals.count]
-  );
-}
-
-// ── Monthly Stats ──
-
-async function getMonthlyStats(userId, months = 3) {
-  const { rows } = await pool.query(
-    `SELECT * FROM monthly_stats WHERE user_id = $1 ORDER BY month_start DESC LIMIT $2`,
-    [userId, months]
-  );
-  return rows;
-}
-
-async function upsertMonthlyStats(userId, monthStart, totals) {
-  await pool.query(
-    `INSERT INTO monthly_stats (user_id, month_start, total_distance_km, total_duration_min, workout_count)
-     VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (user_id, month_start) DO UPDATE
-     SET total_distance_km = $3, total_duration_min = $4, workout_count = $5`,
-    [userId, monthStart, totals.distanceKm, totals.durationMin, totals.count]
-  );
-}
-
-// ── Personal Bests ──
-
-async function getPersonalBests(userId) {
-  const { rows } = await pool.query(
-    "SELECT * FROM personal_bests WHERE user_id = $1 ORDER BY metric", [userId]
-  );
-  return rows;
-}
-
-async function upsertPersonalBest(userId, metric, value, achievedDate) {
-  await pool.query(
-    `INSERT INTO personal_bests (user_id, metric, value, achieved_date)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (user_id, metric) DO UPDATE
-     SET value = $3, achieved_date = $4`,
-    [userId, metric, value, achievedDate]
-  );
-}
-
-module.exports = {
-  getWeeklyStats, upsertWeeklyStats,
-  getMonthlyStats, upsertMonthlyStats,
-  getPersonalBests, upsertPersonalBest,
-};
+module.exports = { createQueries };

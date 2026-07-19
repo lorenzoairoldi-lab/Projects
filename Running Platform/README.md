@@ -1,6 +1,6 @@
 # 🏃 Running Platform
 
-Piattaforma per runner con architettura a **3 microservizi**, frontend **React + Vite**, cache **Redis** e documentazione **Swagger/OpenAPI**. Orchestrato con **Docker Compose** e **Nginx**.
+Piattaforma per runner con 3 microservizi backend, frontend **React + Vite**, cache **Redis**, **Docker Compose** e **Nginx**.
 
 ## Architettura
 
@@ -17,66 +17,54 @@ Piattaforma per runner con architettura a **3 microservizi**, frontend **React +
                                                   Redis
 ```
 
-## Struttura del progetto
+## Struttura
 
 ```
 running-platform/
-│
 ├── services/
-│   ├── auth-service/
-│   │   ├── src/
-│   │   │   ├── app.js           # Express + route
-│   │   │   ├── database.js      # Pool PostgreSQL
-│   │   │   ├── queries.js       # Query SQL
-│   │   │   ├── middleware.js    # JWT auth
-│   │   │   └── swagger.json     # Documentazione
-│   │   ├── migrations/init.sql
-│   │   ├── package.json
-│   │   └── Dockerfile
-│   │
-│   ├── workout-service/
-│   │   └── src/
-│   │       ├── app.js
-│   │       ├── database.js
-│   │       ├── queries.js
-│   │       ├── middleware.js
-│   │       └── swagger.json
-│   │
-│   └── stats-service/
-│       └── src/
-│           ├── app.js
-│           ├── database.js
-│           ├── queries.js
-│           ├── redis.js         # Cache Redis
-│           ├── middleware.js
-│           └── swagger.json
-│
-├── frontend/
-│   └── src/
-│       ├── api.js               # Chiamate API con axios
-│       ├── App.jsx              # Router
-│       ├── Login.jsx            # Login + register
-│       ├── Workouts.jsx         # Lista + form allenamenti
-│       ├── Dashboard.jsx        # Statistiche + grafico
-│       └── main.jsx             # Entry point Vite
-│
-├── nginx/
-│   └── default.conf             # Reverse proxy
-├── docker-compose.yml           # Orchestrazione
-├── .env                         # Variabili sensibili
-└── README.md
+│   ├── auth-service/          # Registrazione, login, profilo
+│   ├── workout-service/       # CRUD allenamenti
+│   └── stats-service/         # Statistiche, personal best, progresso
+│       └── src/app.js         # Circuit Breaker su chiamata → workout-service
+├── frontend/                  # React + Vite
+├── nginx/                     # Reverse proxy
+├── docker-compose.yml
+└── .env
 ```
 
-**Totale: ~38 file**
+## Tecnologie
+
+| Livello | Tecnologia |
+|---------|-----------|
+| Backend | Node.js + Express |
+| Frontend | React + Vite + Axios |
+| Database | PostgreSQL (un DB per servizio) |
+| Cache | Redis |
+| Auth | JWT (access 15min + refresh 7gg, bcrypt) |
+| Infra | Docker Compose + Nginx |
+
+## Pattern implementati
+
+- **Dependency Injection** — ogni servizio esporta `createApp(deps)`. In produzione usa i moduli reali, nei test riceve mock.
+- **Repository Pattern** — le query DB sono isolate in factory (`createQueries(pool)`), il pool viene iniettato.
+- **Circuit Breaker** — stats-service chiama workout-service via `cockatiel`. Dopo 3 fallimenti consecutivi il circuito si apre per 15s, evitando chiamate inutili. Fallback: dati cached o array vuoto.
+
+## Test
+
+Framework: **Vitest + Supertest** (39 test totali, nessuna dipendenza esterna nei test).
+
+```bash
+# Tutti i servizi
+cd services/workout-service && npm test   # 8 test
+cd services/auth-service   && npm test   # 17 test
+cd services/stats-service  && npm test   # 14 test
+```
 
 ## Avvio
 
 ```bash
-# Prima volta
-docker compose up --build
-
-# Volte successive
-docker compose up
+docker compose up --build    # prima volta
+docker compose up            # volte successive
 ```
 
 Apri [http://localhost](http://localhost) per il frontend.
@@ -88,16 +76,18 @@ Apri [http://localhost](http://localhost) per il frontend.
 POST /auth/register    { email, password, name }
 POST /auth/login       { email, password }
 POST /auth/refresh     { refreshToken }
+POST /auth/logout      Bearer + { refreshToken }
 GET  /auth/me          Bearer
 GET  /profiles/me      Bearer
-PUT  /profiles/me      Bearer + { bio, weightKg, heightCm }
+PUT  /profiles/me      Bearer + { bio, weightKg, heightCm, experienceLevel }
 ```
 
 ### Workout (3002)
 ```
-POST   /workouts       Bearer + { distanceKm, durationMin }
-GET    /workouts       Bearer (?page=1&limit=20)
+POST   /workouts       Bearer + { distanceKm, durationMin, elevationM?, notes? }
+GET    /workouts       Bearer (?page=1&limit=20&from=&to=)
 GET    /workouts/:id   Bearer
+PUT    /workouts/:id   Bearer + { distanceKm?, durationMin?, ... }
 DELETE /workouts/:id   Bearer
 ```
 
@@ -107,27 +97,5 @@ GET /stats/weekly         Bearer (?weeks=4)
 GET /stats/monthly        Bearer (?months=3)
 GET /stats/personal-bests Bearer
 GET /stats/progress       Bearer (?metric=distance&period=monthly)
+POST /stats/ingest        Bearer + { action, workout }
 ```
-
-### Swagger
-```
-/swagger.json per ogni servizio
-```
-
-## Tecnologie
-
-- **Backend:** Node.js + Express + PostgreSQL
-- **Frontend:** React + Vite + Axios
-- **Infra:** Docker Compose + Nginx + Redis
-- **Auth:** JWT (access 15min + refresh 7gg, bcrypt)
-- **Documentazione:** OpenAPI 3.0 (Swagger)
-
-## Prossimi sviluppi
-
-- [ ] Test automatici (Jest + Supertest)
-- [ ] CI/CD con GitHub Actions
-- [ ] Deploy su VPS
-- [ ] Rate limiting sulle API
-- [ ] Grafici interattivi con Recharts
-- [ ] Email di conferma registrazione
-- [ ] Dashboard admin
