@@ -14,6 +14,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - running-platform-net
 
   workout-db:
     image: postgres:16-alpine
@@ -29,6 +31,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - running-platform-net
 
   stats-db:
     image: postgres:16-alpine
@@ -44,6 +48,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - running-platform-net
 
   # ── Cache ──
   redis:
@@ -53,6 +59,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - running-platform-net
 
   # ── Microservizi ──
   auth-service:
@@ -66,6 +74,8 @@ services:
     depends_on:
       auth-db:
         condition: service_healthy
+    networks:
+      - running-platform-net
 
   workout-service:
     build: ./services/workout-service
@@ -78,6 +88,8 @@ services:
     depends_on:
       workout-db:
         condition: service_healthy
+    networks:
+      - running-platform-net
 
   stats-service:
     build: ./services/stats-service
@@ -96,6 +108,8 @@ services:
         condition: service_healthy
       workout-service:
         condition: service_started
+    networks:
+      - running-platform-net
 
   # ── Reverse Proxy ──
   nginx:
@@ -108,6 +122,8 @@ services:
       - auth-service
       - workout-service
       - stats-service
+    networks:
+      - running-platform-net
 
   # ── Frontend ──
   frontend:
@@ -116,6 +132,12 @@ services:
       - "5173"
     environment:
       VITE_API_URL: ""
+    networks:
+      - running-platform-net
+
+networks:
+  running-platform-net:
+    driver: bridge
 
 volumes:
   auth-db-data:
