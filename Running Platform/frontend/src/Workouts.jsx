@@ -105,11 +105,11 @@ export default function Workouts() {
 
       if (editingId) {
         await updateWorkout(editingId, payload);
-        ingestStats("update", payload);
+        await ingestStats("update", payload);
         addToast("Workout updated!");
       } else {
         await createWorkout(payload);
-        ingestStats("create", payload);
+        await ingestStats("create", payload);
         addToast("Workout created!");
       }
 
@@ -126,7 +126,7 @@ export default function Workouts() {
     if (!window.confirm("Delete this workout?")) return;
     try {
       await deleteWorkout(id);
-      ingestStats("delete", { id });
+      await ingestStats("delete", { id });
       addToast("Workout deleted");
       load(page);
     } catch {
