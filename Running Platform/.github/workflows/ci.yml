@@ -12,14 +12,29 @@ env:
 
 jobs:
   # ──────────────────────────────────────────────
-  # AUTH SERVICE — 17 test
+  # CI — test su ogni push / PR
   # ──────────────────────────────────────────────
-  test-auth:
-    name: Test Auth Service
+  ci:
+    name: ${{ matrix.label }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - label: Test Auth Service
+            dir: services/auth-service
+            cmd: npm test
+          - label: Test Workout Service
+            dir: services/workout-service
+            cmd: npm test
+          - label: Test Stats Service
+            dir: services/stats-service
+            cmd: npm test
+          - label: Build Frontend
+            dir: frontend
+            cmd: npm run build
     defaults:
       run:
-        working-directory: services/auth-service
+        working-directory: ${{ matrix.dir }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,101 +44,22 @@ jobs:
         with:
           node-version: 20
           cache: "npm"
-          cache-dependency-path: services/auth-service/package-lock.json
+          cache-dependency-path: ${{ matrix.dir }}/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test
+      - name: Run ${{ matrix.cmd }}
+        run: ${{ matrix.cmd }}
 
   # ──────────────────────────────────────────────
-  # WORKOUT SERVICE — 8 test
-  # ──────────────────────────────────────────────
-  test-workout:
-    name: Test Workout Service
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: services/workout-service
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: "npm"
-          cache-dependency-path: services/workout-service/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-
-  # ──────────────────────────────────────────────
-  # STATS SERVICE — 14 test
-  # ──────────────────────────────────────────────
-  test-stats:
-    name: Test Stats Service
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: services/stats-service
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: "npm"
-          cache-dependency-path: services/stats-service/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-
-  # ──────────────────────────────────────────────
-  # FRONTEND — build check (no test, ma verifica
-  # che il bundle compili senza errori)
-  # ──────────────────────────────────────────────
-  build-frontend:
-    name: Build Frontend
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build production bundle
-        run: npm run build
-
-  # ──────────────────────────────────────────────
-  # DOCKER BUILD — solo su push a master,
-  # dopo che tutti i test sono passati
+  # CD — build immagini Docker su push a master
+  #       (dopo che tutta la CI è passata)
   # ──────────────────────────────────────────────
   docker:
-    name: Build & Push Docker Images
+    name: Build & Push ${{ matrix.service.name }}
     runs-on: ubuntu-latest
-    needs: [test-auth, test-workout, test-stats, build-frontend]
+    needs: [ci]
     if: github.ref == 'refs/heads/master'
     permissions:
       contents: read
@@ -149,7 +85,6 @@ jobs:
       - name: Build and push Docker image
         run: |
           IMAGE_ID=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service.name }}
-          # GitHub converte in lowercase — lo facciamo esplicitamente
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           VERSION=${{ github.sha }}
 
