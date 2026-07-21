@@ -1,5 +1,7 @@
 # 🏃 Running Platform
 
+[![CI](https://github.com/lorenzoairoldi-lab/Projects/actions/workflows/ci.yml/badge.svg)](https://github.com/lorenzoairoldi-lab/Projects/actions/workflows/ci.yml)
+
 Piattaforma per runner con 3 microservizi backend, frontend **React + Vite + Tailwind CSS v4**, cache **Redis**, **Docker Compose** e **Nginx**.
 
 ## Architettura
@@ -185,6 +187,30 @@ Routing configurabile via `nginx/default.conf`:
 - `/api/workouts/*` → workout-service
 - `/api/stats/*` → stats-service
 - `/*` → frontend (SPA — supporta HMR/WebSocket)
+
+## CI/CD — GitHub Actions
+
+Il progetto usa **GitHub Actions** per integrazione continua (CI) e delivery continua (CD).
+
+### CI (test — su ogni push e PR)
+```
+├── Test Auth Service    → 17 test Vitest
+├── Test Workout Service →  8 test Vitest
+├── Test Stats Service   → 14 test Vitest
+└── Build Frontend       → verifica che il bundle Vite compili
+```
+Tutti i job girano in parallelo (~30s). I lockfile sono cachati per installazioni rapide.
+
+### CD (Docker — solo su push a `master`)
+Dopo che tutti i test passano:
+- Builda le 4 immagini Docker (auth-service, workout-service, stats-service, frontend)
+- Le pubblica su **GitHub Container Registry (GHCR)**
+- Ogni immagine taggata con SHA del commit + `latest`
+
+### Badge
+```markdown
+[![CI](https://github.com/lorenzoairoldi-lab/Projects/actions/workflows/ci.yml/badge.svg)](https://github.com/lorenzoairoldi-lab/Projects/actions/workflows/ci.yml)
+```
 
 ## Variabili d'ambiente (`.env`)
 
