@@ -2,20 +2,64 @@
 @plugin "@tailwindcss/forms";
 
 @theme {
-  --color-primary: #6366f1;
-  --color-primary-dark: #4f46e5;
+  /* Palette principale — indigo energico + verde runner */
+  --color-primary: #4f46e5;
+  --color-primary-dark: #4338ca;
   --color-primary-light: #a5b4fc;
-  --color-accent: #10b981;
+  --color-accent: #059669;
   --color-accent-light: #6ee7b7;
-  --color-surface: #f8fafc;
-  --color-danger: #f43f5e;
-  --color-warm: #f59e0b;
+  --color-surface: #f1f5f9;
+  --color-danger: #e11d48;
+  --color-warm: #d97706;
+
+  /* Font */
+  --font-family-sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Ombre personalizzate per più profondità */
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 10px 15px -3px rgb(0 0 0 / 0.08);
+  --shadow-nav: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.04);
 }
 
+/* ── Base ── */
+
 body {
-  @apply bg-surface text-gray-800 antialiased;
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  @apply bg-surface text-slate-800 antialiased;
 }
+
+/* ── Card generica ── */
+
+.card {
+  @apply bg-white rounded-xl border border-slate-200/60;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ── Pulsante primario ── */
+
+.btn {
+  @apply inline-flex items-center justify-center font-medium text-sm rounded-lg transition-all duration-150;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Input ── */
+
+.input {
+  @apply w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-800 outline-none transition-all duration-150;
+}
+
+.input:focus {
+  @apply border-primary ring-2 ring-primary/20;
+}
+
+/* ── Animazioni ── */
 
 @keyframes slide-in {
   from {

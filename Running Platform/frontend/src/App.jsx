@@ -28,17 +28,17 @@ function Login({ setUser }) {
 
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
+      <div className="w-full max-w-md card p-8">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary">🏃</h1>
-          <h2 className="text-2xl font-bold text-gray-800 mt-2">Running Platform</h2>
-          <p className="text-gray-500 text-sm mt-1">
+          <div className="flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mx-auto mb-4 text-3xl">🏃</div>
+          <h2 className="text-2xl font-bold text-slate-800">Running Platform</h2>
+          <p className="text-slate-500 text-sm mt-1">
             {isRegister ? "Create your account" : "Welcome back"}
           </p>
         </div>
 
         {error && (
-          <div className="bg-danger/10 border border-danger/30 text-danger rounded-lg px-4 py-3 text-sm mb-4">
+          <div className="bg-danger/10 border border-danger/20 text-danger rounded-lg px-4 py-3 text-sm mb-4">
             {error}
           </div>
         )}
@@ -50,7 +50,7 @@ function Login({ setUser }) {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition text-sm"
+              className="input"
             />
           )}
           <input
@@ -59,7 +59,7 @@ function Login({ setUser }) {
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             required
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition text-sm"
+            className="input"
           />
           <input
             type="password"
@@ -67,11 +67,11 @@ function Login({ setUser }) {
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             required
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition text-sm"
+            className="input"
           />
           <button
             type="submit"
-            className="w-full py-3 bg-primary hover:bg-primary-dark text-white font-semibold rounded-lg transition cursor-pointer"
+            className="btn w-full py-3 bg-primary hover:bg-primary-dark text-white font-semibold"
           >
             {isRegister ? "Register" : "Login"}
           </button>
@@ -99,11 +99,15 @@ function Layout({ children, user, onLogout }) {
 
   return (
     <div className="min-h-screen bg-surface">
-      <nav className="bg-primary-dark text-white shadow-lg">
+      <nav className="bg-gradient-to-r from-primary to-primary-dark text-white shadow-nav border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-6">
-              <Link to="/workouts" className="font-bold text-lg">🏃 RP</Link>
+              <Link to="/workouts" className="flex items-center gap-2.5 font-bold text-lg tracking-tight">
+                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/15 text-base">🏃</span>
+                <span className="hidden sm:inline">Running Platform</span>
+                <span className="sm:hidden">RP</span>
+              </Link>
               <div className="hidden sm:flex items-center gap-6">
                 {navLinks.map((link) => (
                   <Link
