@@ -51,47 +51,47 @@ export default function Profile() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h2 className="text-2xl font-bold text-slate-800 mb-6">👤 Profile</h2>
+      <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-6">👤 Profile</h2>
 
-      <form onSubmit={handleSave} className="card p-6 space-y-5">
+      <form onSubmit={handleSave} className="card dark:bg-slate-800 dark:border-slate-700 p-6 space-y-5">
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1.5">Bio</label>
+          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Bio</label>
           <textarea
             value={form.bio}
             onChange={(e) => setForm({ ...form, bio: e.target.value })}
             placeholder="Tell us about yourself..."
             rows={3}
-            className="input"
+            className="input dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-400"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">Weight (kg)</label>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Weight (kg)</label>
             <input
               type="number" step="0.1" placeholder="e.g. 70"
               value={form.weightKg}
               onChange={(e) => setForm({ ...form, weightKg: e.target.value })}
-              className="input"
+              className="input dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-400"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">Height (cm)</label>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Height (cm)</label>
             <input
               type="number" placeholder="e.g. 175"
               value={form.heightCm}
               onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
-              className="input"
+              className="input dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-400"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1.5">Experience Level</label>
+          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Experience Level</label>
           <select
             value={form.experienceLevel}
             onChange={(e) => setForm({ ...form, experienceLevel: e.target.value })}
-            className="input"
+            className="input dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
           >
             <option value="">Select...</option>
             <option value="beginner">🥇 Beginner</option>
@@ -103,7 +103,7 @@ export default function Profile() {
         <button
           type="submit"
           disabled={saving}
-          className="btn w-full py-3 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-medium disabled:cursor-not-allowed"
+          className="btn w-full py-3 bg-primary hover:bg-primary-dark disabled:opacity-50 cursor-pointer text-white font-medium disabled:cursor-not-allowed"
         >
           {saving ? "Saving..." : "Save Profile"}
         </button>

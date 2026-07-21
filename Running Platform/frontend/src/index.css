@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 @plugin "@tailwindcss/forms";
 
 @theme {
@@ -59,17 +60,86 @@ body {
   @apply border-primary ring-2 ring-primary/20;
 }
 
-/* ── Animazioni ── */
+/* ── Dark Mode ── */
+
+.dark body {
+  @apply bg-slate-900;
+}
+
+:root {
+  --tooltip-bg: #fff;
+}
+.dark {
+  --tooltip-bg: #1e293b;
+}
+
+/* ── Running Man Animation ── */
+
+.runner-bounce {
+  animation: run-bounce 0.55s ease-in-out infinite;
+}
+
+.runner-arm-back {
+  animation: swing-arm-back 0.55s ease-in-out infinite;
+  transform-origin: 0 0;
+}
+
+.runner-arm-front {
+  animation: swing-arm-front 0.55s ease-in-out infinite;
+  transform-origin: 0 0;
+}
+
+.runner-leg-back {
+  animation: swing-leg-back 0.55s ease-in-out infinite;
+  transform-origin: 0 0;
+}
+
+.runner-leg-front {
+  animation: swing-leg-front 0.55s ease-in-out infinite;
+  transform-origin: 0 0;
+}
+
+.runner-motion {
+  animation: fade-slide 0.55s ease-in-out infinite;
+}
+.runner-motion-2 { animation-delay: 0.12s; }
+.runner-motion-3 { animation-delay: 0.24s; }
+
+@keyframes run-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes swing-arm-back {
+  0%, 100% { transform: rotate(38deg); }
+  50% { transform: rotate(-22deg); }
+}
+
+@keyframes swing-arm-front {
+  0%, 100% { transform: rotate(-35deg); }
+  50% { transform: rotate(25deg); }
+}
+
+@keyframes swing-leg-back {
+  0%, 100% { transform: rotate(-28deg); }
+  50% { transform: rotate(22deg); }
+}
+
+@keyframes swing-leg-front {
+  0%, 100% { transform: rotate(28deg); }
+  50% { transform: rotate(-22deg); }
+}
+
+@keyframes fade-slide {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0; transform: translateX(-6px); }
+}
+
+/* ── Toast animation ── */
 
 @keyframes slide-in {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 .animate-slide-in {

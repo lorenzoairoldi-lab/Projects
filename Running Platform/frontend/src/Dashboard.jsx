@@ -55,14 +55,14 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-slate-800">📊 Dashboard</h2>
+      <h2 className="text-2xl font-bold text-slate-800 dark:text-white">📊 Dashboard</h2>
 
       {/* Progress Card */}
       {progress && (
-        <div className="card p-6">
-          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Progress (this month vs last)</h3>
+        <div className="card dark:bg-slate-800 dark:border-slate-700 p-6">
+          <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Progress (this month vs last)</h3>
           <div className="mt-2 flex items-baseline gap-3">
-            <span className="text-3xl font-bold text-slate-800">
+            <span className="text-3xl font-bold text-slate-800 dark:text-white">
               {parseFloat(progress.current).toFixed(1)} km
             </span>
             <span className={`text-lg font-semibold ${progress.change >= 0 ? "text-accent" : "text-danger"}`}>
@@ -70,7 +70,7 @@ export default function Dashboard() {
               <span className="text-sm ml-1">({progress.percentage ?? 0}%)</span>
             </span>
           </div>
-          <div className="mt-3 w-full bg-slate-100 rounded-full h-2.5">
+          <div className="mt-3 w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5">
             <div
               className={`h-2.5 rounded-full transition-all ${progress.change >= 0 ? "bg-accent" : "bg-danger"}`}
               style={{ width: `${Math.min(Math.abs(progress.percentage || 0), 100)}%` }}
@@ -80,32 +80,32 @@ export default function Dashboard() {
       )}
 
       {/* Weekly Chart */}
-      <div className="card p-6">
-        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">Last 4 Weeks</h3>
+      <div className="card dark:bg-slate-800 dark:border-slate-700 p-6">
+        <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-4">Last 4 Weeks</h3>
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData}>
               <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#94a3b8" }} />
               <YAxis hide />
               <Tooltip
-                contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 6px rgba(0,0,0,0.08)" }}
+                contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 6px rgba(0,0,0,0.08)", backgroundColor: "var(--tooltip-bg, #fff)" }}
                 formatter={(value) => [`${value.toFixed(1)} km`, "Distance"]}
               />
               <Bar dataKey="km" fill="#4f46e5" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-slate-400 text-center py-8">No data yet</p>
+          <p className="text-slate-400 dark:text-slate-500 text-center py-8">No data yet</p>
         )}
       </div>
 
       {/* Monthly Stats Table */}
-      <div className="card p-6">
-        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">Monthly Totals</h3>
+      <div className="card dark:bg-slate-800 dark:border-slate-700 p-6">
+        <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-4">Monthly Totals</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gradient-to-r from-primary to-primary-dark text-white">
+              <tr className="bg-gradient-to-r from-primary to-primary-dark dark:from-slate-700 dark:to-slate-700 text-white">
                 <th className="text-left px-4 py-3 font-medium">Month</th>
                 <th className="text-left px-4 py-3 font-medium">Distance</th>
                 <th className="text-left px-4 py-3 font-medium">Duration</th>
@@ -114,17 +114,17 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {monthly.map((m) => (
-                <tr key={m.month_start} className="border-b border-slate-100 hover:bg-primary/5 transition">
-                  <td className="px-4 py-3 text-slate-700">
+                <tr key={m.month_start} className="border-b border-slate-100 dark:border-slate-700 hover:bg-primary/5 dark:hover:bg-primary/10 transition">
+                  <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
                     {new Date(m.month_start + "-01").toLocaleDateString("en", { month: "long", year: "numeric" })}
                   </td>
-                  <td className="px-4 py-3 font-medium">{parseFloat(m.total_distance_km).toFixed(1)} km</td>
-                  <td className="px-4 py-3 text-slate-600">{m.total_duration_min} min</td>
-                  <td className="px-4 py-3">{m.workout_count}</td>
+                  <td className="px-4 py-3 font-medium dark:text-slate-200">{parseFloat(m.total_distance_km).toFixed(1)} km</td>
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{m.total_duration_min} min</td>
+                  <td className="px-4 py-3 dark:text-slate-300">{m.workout_count}</td>
                 </tr>
               ))}
               {monthly.length === 0 && (
-                <tr><td colSpan={4} className="text-center py-8 text-slate-400">No data yet</td></tr>
+                <tr><td colSpan={4} className="text-center py-8 text-slate-400 dark:text-slate-500">No data yet</td></tr>
               )}
             </tbody>
           </table>
@@ -132,10 +132,10 @@ export default function Dashboard() {
       </div>
 
       {/* Personal Bests */}
-      <div className="card p-6">
-        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">🏆 Personal Bests</h3>
+      <div className="card dark:bg-slate-800 dark:border-slate-700 p-6">
+        <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-4">🏆 Personal Bests</h3>
         {bests.length === 0 ? (
-          <p className="text-slate-400 text-center py-8">Keep running to set your first records!</p>
+          <p className="text-slate-400 dark:text-slate-500 text-center py-8">Keep running to set your first records!</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {bests.map((b) => {
@@ -146,13 +146,13 @@ export default function Dashboard() {
                   : `${parseFloat(b.value).toFixed(2)} km`;
 
               return (
-                <div key={b.metric} className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-xl p-5 border border-primary/10">
-                  <div className="text-sm text-slate-500 flex items-center gap-2">
+                <div key={b.metric} className="bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 rounded-xl p-5 border border-primary/10 dark:border-primary/20">
+                  <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
                     <span>{metricIcons[b.metric] || "🎯"}</span>
                     {metricLabels[b.metric] || b.metric}
                   </div>
-                  <div className="text-2xl font-bold text-slate-800 mt-1">{displayValue}</div>
-                  <div className="text-xs text-slate-400 mt-1">
+                  <div className="text-2xl font-bold text-slate-800 dark:text-white mt-1">{displayValue}</div>
+                  <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                     {new Date(b.achieved_date).toLocaleDateString()}
                   </div>
                 </div>
