@@ -109,3 +109,13 @@ export async function getProgress(metric = "distance", period = "monthly") {
   const { data } = await api.get("/stats/progress", { params: { metric, period } });
   return data;
 }
+
+// ── Stats cache invalidation ──
+
+export async function ingestStats(action, workout) {
+  try {
+    await api.post("/stats/ingest", { action, workout });
+  } catch {
+    // ingest failure is non-critical — stats will eventually refresh
+  }
+}

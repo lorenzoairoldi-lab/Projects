@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getWorkouts, createWorkout, updateWorkout, deleteWorkout } from "./api";
+import { getWorkouts, createWorkout, updateWorkout, deleteWorkout, ingestStats } from "./api";
 import { useToast } from "./Toast";
 
 function RunningMan({ className = "w-16 h-16" }) {
@@ -105,9 +105,11 @@ export default function Workouts() {
 
       if (editingId) {
         await updateWorkout(editingId, payload);
+        ingestStats("update", payload);
         addToast("Workout updated!");
       } else {
         await createWorkout(payload);
+        ingestStats("create", payload);
         addToast("Workout created!");
       }
 
@@ -124,6 +126,7 @@ export default function Workouts() {
     if (!window.confirm("Delete this workout?")) return;
     try {
       await deleteWorkout(id);
+      ingestStats("delete", { id });
       addToast("Workout deleted");
       load(page);
     } catch {

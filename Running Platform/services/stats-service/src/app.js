@@ -255,14 +255,21 @@ function createApp(deps) {
     }
   });
 
-  /* ─────────────── INGEST (webhook da workout service) ─────────────── */
+  /* ─────────────── INGEST (invalida cache + dati PG per ricalcolo) ─────────────── */
 
   app.post("/stats/ingest", auth, async (req, res) => {
     try {
-      const { action, workout } = req.body;
+      // Svuota Redis
       const keys = await cache.redis.keys(`*:${req.user.userId}:*`);
       if (keys.length > 0) await cache.redis.del(keys);
-      res.json({ message: "Cache invalidated", keysRemoved: keys.length });
+
+      // Cancella le statistiche pre-calcolate in PG
+      // così il prossimo GET le ricalcolerà dai workout reali
+      await q.deleteWeeklyStats(req.user.userId);
+      await q.deleteMonthlyStats(req.user.userId);
+      await q.deletePersonalBests(req.user.userId);
+
+      res.json({ message: "Cache and PG stats invalidated" });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Server error" });

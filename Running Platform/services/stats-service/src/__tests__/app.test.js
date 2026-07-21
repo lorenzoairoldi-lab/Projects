@@ -71,14 +71,17 @@ describe("Stats Service", () => {
         mockWeeklyStat({ week_start: "2023-12-25" }),
       ]),
       upsertWeeklyStats: vi.fn().mockResolvedValue(undefined),
+      deleteWeeklyStats: vi.fn().mockResolvedValue(undefined),
       getMonthlyStats: vi.fn().mockResolvedValue([
         mockMonthlyStat({ month_start: "2024-01-01" }),
         mockMonthlyStat({ month_start: "2023-12-01" }),
         mockMonthlyStat({ month_start: "2023-11-01" }),
       ]),
       upsertMonthlyStats: vi.fn().mockResolvedValue(undefined),
+      deleteMonthlyStats: vi.fn().mockResolvedValue(undefined),
       getPersonalBests: vi.fn().mockResolvedValue([mockBest()]),
       upsertPersonalBest: vi.fn().mockResolvedValue(undefined),
+      deletePersonalBests: vi.fn().mockResolvedValue(undefined),
     };
     mockDatabase = {
       pool: { query: vi.fn() },
@@ -234,9 +237,12 @@ describe("Stats Service", () => {
         .send({ action: "create", workout: mockWorkout() });
 
       expect(res.status).toBe(200);
-      expect(res.body.keysRemoved).toBe(2);
+      expect(res.body.message).toBe("Cache and PG stats invalidated");
       expect(mockCache.redis.keys).toHaveBeenCalled();
-      expect(mockCache.redis.del).toHaveBeenCalledWith(["weekly:user-1:4", "bests:user-1"]);
+      expect(mockCache.redis.del).toHaveBeenCalled();
+      expect(mockQueries.deleteWeeklyStats).toHaveBeenCalledWith("user-1");
+      expect(mockQueries.deleteMonthlyStats).toHaveBeenCalledWith("user-1");
+      expect(mockQueries.deletePersonalBests).toHaveBeenCalledWith("user-1");
     });
   });
 });

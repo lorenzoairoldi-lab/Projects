@@ -19,6 +19,10 @@ function createQueries(pool) {
     );
   }
 
+  async function deleteWeeklyStats(userId) {
+    await pool.query("DELETE FROM weekly_stats WHERE user_id = $1", [userId]);
+  }
+
   // ── Monthly Stats ──
 
   async function getMonthlyStats(userId, months = 3) {
@@ -37,6 +41,10 @@ function createQueries(pool) {
        SET total_distance_km = $3, total_duration_min = $4, workout_count = $5`,
       [userId, monthStart, totals.distanceKm, totals.durationMin, totals.count]
     );
+  }
+
+  async function deleteMonthlyStats(userId) {
+    await pool.query("DELETE FROM monthly_stats WHERE user_id = $1", [userId]);
   }
 
   // ── Personal Bests ──
@@ -58,10 +66,14 @@ function createQueries(pool) {
     );
   }
 
+  async function deletePersonalBests(userId) {
+    await pool.query("DELETE FROM personal_bests WHERE user_id = $1", [userId]);
+  }
+
   return {
-    getWeeklyStats, upsertWeeklyStats,
-    getMonthlyStats, upsertMonthlyStats,
-    getPersonalBests, upsertPersonalBest,
+    getWeeklyStats, upsertWeeklyStats, deleteWeeklyStats,
+    getMonthlyStats, upsertMonthlyStats, deleteMonthlyStats,
+    getPersonalBests, upsertPersonalBest, deletePersonalBests,
   };
 }
 
