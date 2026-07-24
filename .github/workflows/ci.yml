@@ -92,6 +92,6 @@ jobs:
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           VERSION=${{ github.sha }}
 
-          docker build -f ${{ matrix.service.dockerfile }} -t $IMAGE_ID:$VERSION -t $IMAGE_ID:latest ./${{ matrix.service.context }}
+          docker build -f "${{ matrix.service.dockerfile }}" -t $IMAGE_ID:$VERSION -t $IMAGE_ID:latest "./${{ matrix.service.context }}"
           docker push $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:latest
