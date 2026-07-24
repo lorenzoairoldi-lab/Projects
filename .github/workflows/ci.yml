@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ──────────────────────────────────────────────
+  # CI — test su ogni push / PR
+  # ──────────────────────────────────────────────
+  ci:
+    name: ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - label: Test Auth Service
+            dir: Running Platform/services/auth-service
+            cmd: npm test
+          - label: Test Workout Service
+            dir: Running Platform/services/workout-service
+            cmd: npm test
+          - label: Test Stats Service
+            dir: Running Platform/services/stats-service
+            cmd: npm test
+          - label: Build Frontend
+            dir: Running Platform/frontend
+            cmd: npm run build
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: ${{ matrix.dir }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ${{ matrix.cmd }}
+        run: ${{ matrix.cmd }}
+
+  # ──────────────────────────────────────────────
+  # CD — build immagini Docker su push a master
+  #       (dopo che tutta la CI è passata)
+  # ──────────────────────────────────────────────
+  docker:
+    name: Build & Push ${{ matrix.service.name }}
+    runs-on: ubuntu-latest
+    needs: [ci]
+    if: github.ref == 'refs/heads/master'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service:
+          - name: auth-service
+            dockerfile: Running Platform/services/auth-service/Dockerfile
+            context: Running Platform/services/auth-service
+          - name: workout-service
+            dockerfile: Running Platform/services/workout-service/Dockerfile
+            context: Running Platform/services/workout-service
+          - name: stats-service
+            dockerfile: Running Platform/services/stats-service/Dockerfile
+            context: Running Platform/services/stats-service
+          - name: frontend
+            dockerfile: Running Platform/frontend/Dockerfile
+            context: Running Platform/frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE_ID=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service.name }}
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          VERSION=${{ github.sha }}
+
+          docker build -f ${{ matrix.service.dockerfile }} -t $IMAGE_ID:$VERSION -t $IMAGE_ID:latest ./${{ matrix.service.context }}
+          docker push $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:latest
