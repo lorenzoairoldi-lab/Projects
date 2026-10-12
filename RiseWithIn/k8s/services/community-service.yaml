@@ -1,0 +1,19 @@
+# Service: community-service
+#
+# Service ClusterIP per community-service.
+# Espone il workload soltanto all'interno del cluster e seleziona i Pod tramite label.
+apiVersion: v1
+kind: Service
+metadata:
+  name: community-service
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/name: community-service
+spec:
+  selector:
+    app.kubernetes.io/name: community-service
+  ports:
+    - name: http
+      port: 4008
+      targetPort: http
+  type: ClusterIP

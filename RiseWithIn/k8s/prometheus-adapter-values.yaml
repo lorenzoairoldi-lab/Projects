@@ -1,0 +1,33 @@
+# Valori di configurazione
+#
+# Valori Helm per Prometheus Adapter.
+# Configurano la conversione delle metriche Prometheus in metriche Kubernetes.
+prometheus:
+  url: 'http://prometheus.risewithin.svc'
+  port: 9090
+rules:
+  default: false
+  custom:
+    - seriesQuery: 'risewithin_gateway_http_requests_total{namespace="",pod!=""}'
+      resources:
+        overrides:
+          pod:
+            resource: pod
+      name:
+        matches: ^risewithin_gateway_http_requests_total$
+        as: http_requests_per_second
+      metricsQuery: >-
+        sum(rate(risewithin_gateway_http_requests_total{pod=<<.LabelMatchers>>}[2m])) by
+        (<<.GroupBy>>)
+    - seriesQuery: 'risewithin_gateway_http_request_duration_seconds_sum{namespace="",pod!=""}'
+      resources:
+        overrides:
+          pod:
+            resource: pod
+      name:
+        matches: ^risewithin_gateway_http_request_duration_seconds_sum$
+        as: http_request_latency_seconds
+      metricsQuery: >-
+        sum(rate(risewithin_gateway_http_request_duration_seconds_sum{pod=<<.LabelMatchers>>}[2m]))
+        /
+        sum(rate(risewithin_gateway_http_request_duration_seconds_count{pod=<<.LabelMatchers>>}[2m]))

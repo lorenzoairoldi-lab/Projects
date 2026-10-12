@@ -1,0 +1,19 @@
+# Service: notification-service
+#
+# Service ClusterIP per notification-service.
+# Espone il workload soltanto all'interno del cluster e seleziona i Pod tramite label.
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/name: notification-service
+spec:
+  selector:
+    app.kubernetes.io/name: notification-service
+  ports:
+    - name: http
+      port: 4010
+      targetPort: http
+  type: ClusterIP

@@ -1,0 +1,1 @@
+import{startSubgraph}from'../../../shared/server.js';import typeDefs from'./schema.js';import resolvers from'./resolvers.js';import{initGoals}from'./models/goalModel.js';startSubgraph({serviceName:'goals-service',port:Number(process.env.PORT||4004),typeDefs,resolvers,initialize:initGoals});

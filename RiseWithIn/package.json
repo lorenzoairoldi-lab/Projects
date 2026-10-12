@@ -1,0 +1,26 @@
+{
+  "name": "risewithin",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "workspaces": [
+    "api-gateway",
+    "services/*",
+    "frontend"
+  ],
+  "scripts": {
+    "test": "npm run test --workspace=@risewithin/auth-service",
+    "build": "npm run build --workspace=@risewithin/frontend",
+    "lint": "eslint api-gateway services shared frontend/src frontend/*.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.4",
+    "globals": "^17.11.0"
+  }
+}

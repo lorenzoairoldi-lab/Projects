@@ -1,0 +1,16 @@
+# Service: prometheus
+#
+# Service ClusterIP per prometheus.
+# Espone il workload soltanto all'interno del cluster e seleziona i Pod tramite label.
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: risewithin
+spec:
+  selector:
+    app.kubernetes.io/name: prometheus
+  ports:
+    - name: http
+      port: 9090
+      targetPort: http

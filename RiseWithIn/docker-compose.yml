@@ -1,0 +1,517 @@
+# RiseWithin - Ambiente locale Docker Compose
+#
+# Questo file avvia l'intera piattaforma in modalità sviluppo:
+#   - 10 microservizi backend;
+#   - API Gateway e frontend;
+#   - database PostgreSQL e MongoDB dedicati ai singoli domini;
+#   - Redis e RabbitMQ per cache e messaggistica;
+#   - Prometheus e Grafana per il monitoraggio.
+#
+# Endpoint esposti sulla macchina host:
+#   - Frontend:           http://localhost:3000
+#   - API Gateway:        http://localhost:4000/graphql
+#   - Grafana:            http://localhost:3001
+#   - Prometheus:         http://localhost:9090
+#   - RabbitMQ Management http://localhost:15672
+#
+# Le credenziali e i valori di fallback presenti in questo file sono destinati
+# esclusivamente allo sviluppo locale. In ambienti reali utilizzare secret sicuri.
+
+name: risewithin
+
+# -----------------------------------------------------------------------------
+# CONFIGURAZIONE CONDIVISA DAI MICROSERVIZI
+# -----------------------------------------------------------------------------
+# Il template x-api evita di ripetere restart policy, rete, dipendenze comuni e
+# variabili d'ambiente. Ogni servizio lo importa tramite l'anchor *api-defaults
+# e aggiunge porta, database e configurazioni specifiche del proprio dominio.
+x-api: &api-defaults
+  restart: unless-stopped
+  networks:
+    - platform
+  depends_on:
+    redis:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
+  environment: &common-environment
+    NODE_ENV: development
+    CORS_ORIGINS: http://localhost:3000
+    JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-development-access-secret-change-me-now}
+    JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-development-refresh-secret-change-me-now}
+    REDIS_URL: redis://redis:6379
+    RABBITMQ_URL: amqp://risewithin:risewithin@rabbitmq:5672
+
+services:
+  # ---------------------------------------------------------------------------
+  # MICROSERVIZI CON DATABASE POSTGRESQL
+  # ---------------------------------------------------------------------------
+  # Ogni servizio dispone di un database isolato e viene avviato soltanto dopo
+  # che database, Redis e RabbitMQ hanno superato il rispettivo healthcheck.
+
+  # Gestisce autenticazione, token di accesso e token di refresh.
+  auth-service:
+    <<: *api-defaults
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+    environment:
+      <<: *common-environment
+      PORT: 4001
+      DATABASE_URL: postgres://app:app@auth-db:5432/auth
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Gestisce profili e informazioni degli utenti.
+  user-service:
+    <<: *api-defaults
+    build:
+      context: .
+      dockerfile: services/user-service/Dockerfile
+    environment:
+      <<: *common-environment
+      PORT: 4002
+      DATABASE_URL: postgres://app:app@user-db:5432/users
+    depends_on:
+      user-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Gestisce le abitudini personali e il relativo avanzamento.
+  habits-service:
+    <<: *api-defaults
+    build:
+      context: .
+      dockerfile: services/habits-service/Dockerfile
+    environment:
+      <<: *common-environment
+      PORT: 4003
+      DATABASE_URL: postgres://app:app@habits-db:5432/habits
+    depends_on:
+      habits-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Gestisce obiettivi e traguardi degli utenti.
+  goals-service:
+    <<: *api-defaults
+    build:
+      context: .
+      dockerfile: services/goals-service/Dockerfile
+    environment:
+      <<: *common-environment
+      PORT: 4004
+      DATABASE_URL: postgres://app:app@goals-db:5432/goals
+    depends_on:
+      goals-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Gestisce le routine pianificate dagli utenti.
+  routine-service:
+    <<: *api-defaults
+    build:
+      context: .
+      dockerfile: services/routine-service/Dockerfile
+    environment:
+      <<: *common-environment
+      PORT: 4005
+      DATABASE_URL: postgres://app:app@routine-db:5432/routines
+    depends_on:
+      routine-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Gestisce sessioni e metriche dedicate alla concentrazione.
+  focus-service:
+    <<: *api-defaults
+    build:
+      context: .
+      dockerfile: services/focus-service/Dockerfile
+    environment:
+      <<: *common-environment
+      PORT: 4006
+      DATABASE_URL: postgres://app:app@focus-db:5432/focus
+    depends_on:
+      focus-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Gestisce abbonamenti e integrazione con Stripe.
+  subscription-service:
+    <<: *api-defaults
+    build:
+      context: .
+      dockerfile: services/subscription-service/Dockerfile
+    environment:
+      <<: *common-environment
+      PORT: 4009
+      DATABASE_URL: postgres://app:app@subscription-db:5432/subscriptions
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_development_placeholder}
+      STRIPE_PRO_PRICE_ID: ${STRIPE_PRO_PRICE_ID:-price_pro_placeholder}
+      STRIPE_PREMIUM_PRICE_ID: ${STRIPE_PREMIUM_PRICE_ID:-price_premium_placeholder}
+    depends_on:
+      subscription-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # MICROSERVIZI CON DATABASE MONGODB
+  # ---------------------------------------------------------------------------
+
+  # Gestisce contenuti editoriali e risorse informative.
+  content-service:
+    <<: *api-defaults
+    build:
+      context: .
+      dockerfile: services/content-service/Dockerfile
+    environment:
+      <<: *common-environment
+      PORT: 4007
+      MONGO_URL: mongodb://content-db:27017
+      MONGO_DB: content
+    depends_on:
+      content-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Gestisce interazioni e funzionalità della community.
+  community-service:
+    <<: *api-defaults
+    build:
+      context: .
+      dockerfile: services/community-service/Dockerfile
+    environment:
+      <<: *common-environment
+      PORT: 4008
+      MONGO_URL: mongodb://community-db:27017
+      MONGO_DB: community
+    depends_on:
+      community-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Gestisce la creazione e la consegna delle notifiche.
+  notification-service:
+    <<: *api-defaults
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    environment:
+      <<: *common-environment
+      PORT: 4010
+      MONGO_URL: mongodb://notification-db:27017
+      MONGO_DB: notifications
+    depends_on:
+      notification-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # PUNTI DI INGRESSO DELLA PIATTAFORMA
+  # ---------------------------------------------------------------------------
+
+  # Espone un unico endpoint GraphQL e inoltra le richieste ai microservizi
+  # attraverso i rispettivi nomi DNS interni della rete platform.
+  api-gateway:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    ports:
+      - "4000:4000"
+    networks:
+      - platform
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      CORS_ORIGINS: http://localhost:3000
+      AUTH_SERVICE_URL: http://auth-service:4001/graphql
+      USER_SERVICE_URL: http://user-service:4002/graphql
+      HABITS_SERVICE_URL: http://habits-service:4003/graphql
+      GOALS_SERVICE_URL: http://goals-service:4004/graphql
+      ROUTINE_SERVICE_URL: http://routine-service:4005/graphql
+      FOCUS_SERVICE_URL: http://focus-service:4006/graphql
+      CONTENT_SERVICE_URL: http://content-service:4007/graphql
+      COMMUNITY_SERVICE_URL: http://community-service:4008/graphql
+      SUBSCRIPTION_SERVICE_URL: http://subscription-service:4009/graphql
+      NOTIFICATION_SERVICE_URL: http://notification-service:4010/graphql
+    depends_on:
+      - auth-service
+      - user-service
+      - habits-service
+      - goals-service
+      - routine-service
+      - focus-service
+      - content-service
+      - community-service
+      - subscription-service
+      - notification-service
+
+  # Compila il frontend configurandolo per usare l'API Gateway esposto sulla
+  # macchina host. La porta 8080 del container viene pubblicata come porta 3000.
+  frontend:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_GRAPHQL_URL: http://localhost:4000/graphql
+    ports:
+      - "3000:8080"
+    networks:
+      - platform
+    depends_on:
+      - api-gateway
+
+  # ---------------------------------------------------------------------------
+  # DATABASE POSTGRESQL
+  # ---------------------------------------------------------------------------
+  # L'anchor *postgres-defaults contiene la configurazione comune. Ogni istanza
+  # usa un volume distinto per garantire isolamento e persistenza dei dati.
+  auth-db:
+    <<: &postgres-defaults
+      image: postgres:16.10-alpine
+      restart: unless-stopped
+      networks:
+        - platform
+      environment:
+        POSTGRES_USER: app
+        POSTGRES_PASSWORD: app
+      healthcheck:
+        test:
+          - CMD-SHELL
+          - pg_isready -U app
+        interval: 5s
+        timeout: 3s
+        retries: 10
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: auth
+    volumes:
+      - auth-data:/var/lib/postgresql/data
+
+  user-db:
+    <<: *postgres-defaults
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: users
+    volumes:
+      - user-data:/var/lib/postgresql/data
+
+  habits-db:
+    <<: *postgres-defaults
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: habits
+    volumes:
+      - habits-data:/var/lib/postgresql/data
+
+  goals-db:
+    <<: *postgres-defaults
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: goals
+    volumes:
+      - goals-data:/var/lib/postgresql/data
+
+  routine-db:
+    <<: *postgres-defaults
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: routines
+    volumes:
+      - routine-data:/var/lib/postgresql/data
+
+  focus-db:
+    <<: *postgres-defaults
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: focus
+    volumes:
+      - focus-data:/var/lib/postgresql/data
+
+  subscription-db:
+    <<: *postgres-defaults
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: subscriptions
+    volumes:
+      - subscription-data:/var/lib/postgresql/data
+
+  # ---------------------------------------------------------------------------
+  # DATABASE MONGODB
+  # ---------------------------------------------------------------------------
+  # Le tre istanze condividono immagine, rete e healthcheck tramite l'anchor
+  # *mongodb-defaults, mantenendo però volumi dati separati.
+  content-db:
+    <<: &mongodb-defaults
+      image: mongo:8.0.12
+      restart: unless-stopped
+      networks:
+        - platform
+      healthcheck:
+        test:
+          - CMD
+          - mongosh
+          - --quiet
+          - --eval
+          - "db.runCommand({ ping: 1 }).ok"
+        interval: 5s
+        timeout: 3s
+        retries: 10
+    volumes:
+      - content-data:/data/db
+
+  community-db:
+    <<: *mongodb-defaults
+    volumes:
+      - community-data:/data/db
+
+  notification-db:
+    <<: *mongodb-defaults
+    volumes:
+      - notification-data:/data/db
+
+  # ---------------------------------------------------------------------------
+  # CACHE E MESSAGGISTICA
+  # ---------------------------------------------------------------------------
+
+  # Redis fornisce cache condivisa. AOF mantiene i dati anche dopo un riavvio.
+  redis:
+    image: redis:7.4.5-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+    networks:
+      - platform
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # RabbitMQ gestisce gli eventi asincroni. La porta AMQP 5672 rimane interna,
+  # mentre la console di amministrazione è disponibile sulla porta host 15672.
+  rabbitmq:
+    image: rabbitmq:4.1.3-management-alpine
+    networks:
+      - platform
+    environment:
+      RABBITMQ_DEFAULT_USER: risewithin
+      RABBITMQ_DEFAULT_PASS: risewithin
+    ports:
+      - "15672:15672"
+    volumes:
+      - rabbit-data:/var/lib/rabbitmq
+    healthcheck:
+      test:
+        - CMD
+        - rabbitmq-diagnostics
+        - -q
+        - ping
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # MONITORAGGIO
+  # ---------------------------------------------------------------------------
+
+  # Prometheus raccoglie le metriche usando la configurazione locale montata
+  # in sola lettura nel container.
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    networks:
+      - platform
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  # Grafana visualizza le metriche di Prometheus. Provisioning e datasource
+  # vengono caricati dalla cartella locale senza poter essere modificati.
+  grafana:
+    image: grafana/grafana:12.1.1
+    networks:
+      - platform
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+
+# -----------------------------------------------------------------------------
+# RETE CONDIVISA
+# -----------------------------------------------------------------------------
+# Tutti i container comunicano tramite DNS usando il nome del servizio.
+networks:
+  platform: {}
+
+# -----------------------------------------------------------------------------
+# VOLUMI PERSISTENTI
+# -----------------------------------------------------------------------------
+# I named volume preservano database, code, cache e configurazione Grafana anche
+# quando i container vengono ricreati con `docker compose down`.
+volumes:
+  auth-data: {}
+  user-data: {}
+  habits-data: {}
+  goals-data: {}
+  routine-data: {}
+  focus-data: {}
+  subscription-data: {}
+  content-data: {}
+  community-data: {}
+  notification-data: {}
+  redis-data: {}
+  rabbit-data: {}
+  grafana-data: {}

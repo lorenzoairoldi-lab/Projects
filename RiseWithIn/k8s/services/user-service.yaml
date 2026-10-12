@@ -1,0 +1,19 @@
+# Service: user-service
+#
+# Service ClusterIP per user-service.
+# Espone il workload soltanto all'interno del cluster e seleziona i Pod tramite label.
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/name: user-service
+spec:
+  selector:
+    app.kubernetes.io/name: user-service
+  ports:
+    - name: http
+      port: 4002
+      targetPort: http
+  type: ClusterIP

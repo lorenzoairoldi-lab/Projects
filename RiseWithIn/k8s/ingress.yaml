@@ -1,0 +1,43 @@
+# Ingress: risewithin
+#
+# Ingress pubblico della piattaforma RiseWithin.
+# Instrada le richieste verso frontend e API Gateway applicando TLS e regole HTTP.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: risewithin
+  namespace: risewithin
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 1m
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - risewithin.example.com
+      secretName: risewithin-tls
+  rules:
+    - host: risewithin.example.com
+      http:
+        paths:
+          - path: /stripe/webhook
+            pathType: Exact
+            backend:
+              service:
+                name: subscription-service
+                port:
+                  number: 4009
+          - path: /graphql
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 4000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 8080

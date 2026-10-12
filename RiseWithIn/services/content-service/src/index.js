@@ -1,0 +1,1 @@
+import{startSubgraph}from'../../../shared/server.js';import typeDefs from'./schema.js';import resolvers from'./resolvers.js';import{initContent}from'./models/contentModel.js';startSubgraph({serviceName:'content-service',port:Number(process.env.PORT||4007),typeDefs,resolvers,initialize:initContent});

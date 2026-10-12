@@ -1,0 +1,1 @@
+import{startSubgraph}from'../../../shared/server.js';import typeDefs from'./schema.js';import resolvers from'./resolvers.js';import{initRoutines}from'./models/routineModel.js';startSubgraph({serviceName:'routine-service',port:Number(process.env.PORT||4005),typeDefs,resolvers,initialize:initRoutines});

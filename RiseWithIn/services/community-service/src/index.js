@@ -1,0 +1,1 @@
+import{startSubgraph}from'../../../shared/server.js';import typeDefs from'./schema.js';import resolvers from'./resolvers.js';import{initCommunity}from'./models/communityModel.js';startSubgraph({serviceName:'community-service',port:Number(process.env.PORT||4008),typeDefs,resolvers,initialize:initCommunity});

@@ -1,0 +1,19 @@
+# Service: api-gateway
+#
+# Service ClusterIP per api-gateway.
+# Espone il workload soltanto all'interno del cluster e seleziona i Pod tramite label.
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/name: api-gateway
+spec:
+  selector:
+    app.kubernetes.io/name: api-gateway
+  ports:
+    - name: http
+      port: 4000
+      targetPort: http
+  type: ClusterIP

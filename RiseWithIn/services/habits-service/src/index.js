@@ -1,0 +1,1 @@
+import{startSubgraph}from'../../../shared/server.js';import typeDefs from'./schema.js';import resolvers from'./resolvers.js';import{initHabits}from'./models/habitModel.js';startSubgraph({serviceName:'habits-service',port:Number(process.env.PORT||4003),typeDefs,resolvers,initialize:initHabits});

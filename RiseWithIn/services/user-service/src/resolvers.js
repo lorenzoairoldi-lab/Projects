@@ -1,0 +1,5 @@
+import { z } from 'zod'; import { userModel } from './models/userModel.js'; import { requireUser } from './middleware/auth.js';
+const inputSchema=z.object({displayName:z.string().trim().min(2).max(80).optional(),bio:z.string().max(500).nullable().optional(),timezone:z.string().max(64).optional(),locale:z.string().max(10).optional(),avatarUrl:z.string().url().nullable().optional(),onboardingComplete:z.boolean().optional()});
+const map=(p)=>p&&({userId:p.user_id,displayName:p.display_name,bio:p.bio,timezone:p.timezone,locale:p.locale,avatarUrl:p.avatar_url,onboardingComplete:p.onboarding_complete,createdAt:p.created_at.toISOString(),updatedAt:p.updated_at.toISOString()});
+const getOrEnsure=async(id)=>map((await userModel.get(id))||await userModel.ensure(id));
+export default { User:{__resolveReference:({id})=>({id}),profile:({id})=>getOrEnsure(id)},Query:{profile:(_p,_a,c)=>getOrEnsure(requireUser(c).sub)},Mutation:{updateProfile:async(_p,{input},c)=>{const id=requireUser(c).sub;const current=await getOrEnsure(id);return map(await userModel.update(id,{...current,...inputSchema.parse(input)}));}}};

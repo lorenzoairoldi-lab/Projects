@@ -1,0 +1,71 @@
+# Deployment: focus-service
+#
+# Deployment Kubernetes per focus-service.
+# Definisce repliche, immagine, configurazione, probe, risorse e sicurezza del Pod.
+# Il tag immagine statico è un valore di bootstrap: la pipeline CI/CD lo sostituisce
+# con l'immagine GHCR associata allo SHA del commit prima di verificare il rollout.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: focus-service
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/name: focus-service
+    app.kubernetes.io/part-of: risewithin
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: focus-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: focus-service
+        app.kubernetes.io/part-of: risewithin
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: focus-service
+          image: 'ghcr.io/your-org/risewithin/focus-service:1.0.0'
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 4006
+          envFrom:
+            - configMapRef:
+                name: platform-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: FOCUS_DATABASE_URL
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 600m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL

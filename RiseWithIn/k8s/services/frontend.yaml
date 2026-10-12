@@ -1,0 +1,19 @@
+# Service: frontend
+#
+# Service ClusterIP per frontend.
+# Espone il workload soltanto all'interno del cluster e seleziona i Pod tramite label.
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/name: frontend
+spec:
+  selector:
+    app.kubernetes.io/name: frontend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+  type: ClusterIP

@@ -1,0 +1,19 @@
+# Service: subscription-service
+#
+# Service ClusterIP per subscription-service.
+# Espone il workload soltanto all'interno del cluster e seleziona i Pod tramite label.
+apiVersion: v1
+kind: Service
+metadata:
+  name: subscription-service
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/name: subscription-service
+spec:
+  selector:
+    app.kubernetes.io/name: subscription-service
+  ports:
+    - name: http
+      port: 4009
+      targetPort: http
+  type: ClusterIP

@@ -1,0 +1,19 @@
+# Service: goals-service
+#
+# Service ClusterIP per goals-service.
+# Espone il workload soltanto all'interno del cluster e seleziona i Pod tramite label.
+apiVersion: v1
+kind: Service
+metadata:
+  name: goals-service
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/name: goals-service
+spec:
+  selector:
+    app.kubernetes.io/name: goals-service
+  ports:
+    - name: http
+      port: 4004
+      targetPort: http
+  type: ClusterIP

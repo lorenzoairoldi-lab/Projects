@@ -1,0 +1,250 @@
+# RiseWithin - Pipeline CI/CD
+#
+# La pipeline è composta da tre fasi eseguite in sequenza:
+#   1. validate: verifica qualità, sicurezza e build del progetto;
+#   2. images: crea e pubblica su GHCR le immagini Docker dei componenti;
+#   3. deploy: applica i manifest e verifica il rollout su Kubernetes.
+#
+# Pull request e avvii manuali eseguono soltanto la fase di validazione.
+# La pubblicazione delle immagini e il deploy avvengono esclusivamente dopo
+# un push sul branch main.
+#
+# Secret richiesto per il deploy:
+#   KUBE_CONFIG_DATA: kubeconfig del cluster codificato in Base64.
+
+name: RiseWithin CI/CD
+
+# -----------------------------------------------------------------------------
+# EVENTI DI AVVIO
+# -----------------------------------------------------------------------------
+# Avvia la pipeline sui push e sulle pull request dirette a main.
+# workflow_dispatch permette anche l'avvio manuale dalla pagina GitHub Actions.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# -----------------------------------------------------------------------------
+# PERMESSI E CONTROLLO DELLA CONCORRENZA
+# -----------------------------------------------------------------------------
+# Tutti i job partono con accesso in sola lettura al repository.
+# Il job che pubblica le immagini estende localmente il permesso packages.
+permissions:
+  contents: read
+
+# Se arriva un nuovo commit sullo stesso branch o sulla stessa pull request,
+# annulla l'esecuzione precedente per evitare lavoro duplicato.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # FASE 1 - VALIDAZIONE DEL PROGETTO
+  # ---------------------------------------------------------------------------
+  # Installa le dipendenze, esegue test e lint, controlla le vulnerabilità,
+  # compila il frontend e verifica la validità del modello Docker Compose.
+  validate:
+    name: Test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # Scarica soltanto il commit corrente: la cronologia Git non è necessaria.
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      # Prepara Node.js e abilita la cache npm definita dal package-lock.json.
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Lint source code
+        run: npm run lint
+
+      # Interrompe la pipeline in presenza di vulnerabilità high o critical
+      # nelle sole dipendenze utilizzate in produzione.
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Build frontend
+        run: npm run build
+
+      # Analizza e valida la configurazione Compose senza avviare i container.
+      - name: Validate Compose model
+        run: docker compose config --quiet
+
+  # ---------------------------------------------------------------------------
+  # FASE 2 - BUILD E PUBBLICAZIONE DELLE IMMAGINI DOCKER
+  # ---------------------------------------------------------------------------
+  # Questa fase parte soltanto dopo una validazione riuscita e per i push su
+  # main. La matrice crea un job indipendente per ogni componente applicativo.
+  images:
+    name: Build ${{ matrix.name }}
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # packages: write consente la pubblicazione delle immagini su GHCR tramite
+    # il token temporaneo GITHUB_TOKEN fornito automaticamente da GitHub.
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      # Un errore su un componente non interrompe i build già avviati.
+      fail-fast: false
+      # Limita a quattro il numero di immagini costruite contemporaneamente.
+      max-parallel: 4
+      matrix:
+        include:
+          - name: api-gateway
+            dockerfile: api-gateway/Dockerfile
+          - name: auth-service
+            dockerfile: services/auth-service/Dockerfile
+          - name: user-service
+            dockerfile: services/user-service/Dockerfile
+          - name: habits-service
+            dockerfile: services/habits-service/Dockerfile
+          - name: goals-service
+            dockerfile: services/goals-service/Dockerfile
+          - name: routine-service
+            dockerfile: services/routine-service/Dockerfile
+          - name: focus-service
+            dockerfile: services/focus-service/Dockerfile
+          - name: content-service
+            dockerfile: services/content-service/Dockerfile
+          - name: community-service
+            dockerfile: services/community-service/Dockerfile
+          - name: subscription-service
+            dockerfile: services/subscription-service/Dockerfile
+          - name: notification-service
+            dockerfile: services/notification-service/Dockerfile
+          - name: frontend
+            dockerfile: frontend/Dockerfile
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      # Buildx abilita il builder Docker usato per cache e build delle immagini.
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      # Autentica il job al GitHub Container Registry (GHCR).
+      - name: Log in to GHCR
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Costruisce l'immagine del componente corrente, la identifica con lo SHA
+      # del commit e la pubblica nel registry. La cache GHA velocizza build futuri.
+      - name: Build and push image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/risewithin/${{ matrix.name }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------------------------
+  # FASE 3 - DEPLOY SU KUBERNETES
+  # ---------------------------------------------------------------------------
+  # Il deploy parte soltanto se tutte le immagini sono state pubblicate con
+  # successo. L'environment production può applicare le regole di protezione
+  # configurate nelle impostazioni del repository (ad esempio approvazioni).
+  deploy:
+    name: Deploy to Kubernetes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: images
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      # Decodifica temporaneamente il kubeconfig e comunica a kubectl dove
+      # trovarlo tramite la variabile KUBECONFIG dei passi successivi.
+      - name: Configure cluster credentials
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/kube"
+          echo "$KUBE_CONFIG_DATA" | base64 --decode > "$RUNNER_TEMP/kube/config"
+          chmod 600 "$RUNNER_TEMP/kube/config"
+          echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
+
+      # Applica le risorse in ordine: namespace, configurazione, servizi,
+      # workload, autoscaling e ingresso.
+      - name: Apply manifests
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/configmaps
+          kubectl apply -f k8s/services
+          kubectl apply -f k8s/deployments
+          kubectl apply -f k8s/hpa.yaml
+          kubectl apply -f k8s/ingress.yaml
+
+      # Sostituisce i tag di bootstrap presenti nei manifest con le immagini
+      # immutabili appena pubblicate dalla matrice, identificate dallo SHA Git.
+      - name: Deploy release images
+        env:
+          IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/risewithin
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          components=(
+            api-gateway
+            auth-service
+            user-service
+            habits-service
+            goals-service
+            routine-service
+            focus-service
+            content-service
+            community-service
+            subscription-service
+            notification-service
+            frontend
+          )
+
+          for component in "${components[@]}"; do
+            kubectl set image \
+              "deployment/$component" \
+              "$component=$IMAGE_PREFIX/$component:$IMAGE_TAG" \
+              --namespace risewithin
+          done
+
+          kubectl rollout status deployment/api-gateway -n risewithin --timeout=180s
+
+      # Rimuove sempre il kubeconfig temporaneo, anche se il deploy fallisce o
+      # l'esecuzione viene annullata.
+      - name: Remove cluster credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/kube/config"

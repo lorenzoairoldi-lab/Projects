@@ -1,0 +1,19 @@
+# Service: auth-service
+#
+# Service ClusterIP per auth-service.
+# Espone il workload soltanto all'interno del cluster e seleziona i Pod tramite label.
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/name: auth-service
+spec:
+  selector:
+    app.kubernetes.io/name: auth-service
+  ports:
+    - name: http
+      port: 4001
+      targetPort: http
+  type: ClusterIP

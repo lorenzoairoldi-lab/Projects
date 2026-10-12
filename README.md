@@ -8,6 +8,7 @@ Each project is designed to explore different technologies, solve real-world pro
 
 | Project | Technologies |
 |---------|-------------|
+| [RiseWithin](./RiseWithIn/) | React, Node.js, GraphQL, PostgreSQL, MongoDB, Redis, RabbitMQ, Docker, Kubernetes, Prometheus, Grafana |
 | [Running Platform](./Running%20Platform/) | Node.js, Express, React, PostgreSQL, Redis, Docker, Nginx |
 
 ---

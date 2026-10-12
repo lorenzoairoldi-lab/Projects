@@ -1,0 +1,1 @@
+import{startSubgraph}from'../../../shared/server.js';import typeDefs from'./schema.js';import resolvers from'./resolvers.js';import{initFocus}from'./models/focusModel.js';startSubgraph({serviceName:'focus-service',port:Number(process.env.PORT||4006),typeDefs,resolvers,initialize:initFocus});

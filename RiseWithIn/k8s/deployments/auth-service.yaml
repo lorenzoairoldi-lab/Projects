@@ -1,0 +1,81 @@
+# Deployment: auth-service
+#
+# Deployment Kubernetes per auth-service.
+# Definisce repliche, immagine, configurazione, probe, risorse e sicurezza del Pod.
+# Il tag immagine statico è un valore di bootstrap: la pipeline CI/CD lo sostituisce
+# con l'immagine GHCR associata allo SHA del commit prima di verificare il rollout.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/part-of: risewithin
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: auth-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: auth-service
+        app.kubernetes.io/part-of: risewithin
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: auth-service
+          image: 'ghcr.io/your-org/risewithin/auth-service:1.0.0'
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 4001
+          envFrom:
+            - configMapRef:
+                name: platform-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: AUTH_DATABASE_URL
+            - name: JWT_ACCESS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: JWT_ACCESS_SECRET
+            - name: JWT_REFRESH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: JWT_REFRESH_SECRET
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL

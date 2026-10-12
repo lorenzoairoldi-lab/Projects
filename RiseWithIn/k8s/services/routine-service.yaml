@@ -1,0 +1,19 @@
+# Service: routine-service
+#
+# Service ClusterIP per routine-service.
+# Espone il workload soltanto all'interno del cluster e seleziona i Pod tramite label.
+apiVersion: v1
+kind: Service
+metadata:
+  name: routine-service
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/name: routine-service
+spec:
+  selector:
+    app.kubernetes.io/name: routine-service
+  ports:
+    - name: http
+      port: 4005
+      targetPort: http
+  type: ClusterIP

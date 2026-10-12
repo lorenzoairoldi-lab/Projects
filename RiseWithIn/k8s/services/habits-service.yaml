@@ -1,0 +1,19 @@
+# Service: habits-service
+#
+# Service ClusterIP per habits-service.
+# Espone il workload soltanto all'interno del cluster e seleziona i Pod tramite label.
+apiVersion: v1
+kind: Service
+metadata:
+  name: habits-service
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/name: habits-service
+spec:
+  selector:
+    app.kubernetes.io/name: habits-service
+  ports:
+    - name: http
+      port: 4003
+      targetPort: http
+  type: ClusterIP

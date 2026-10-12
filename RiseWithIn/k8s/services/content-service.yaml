@@ -1,0 +1,19 @@
+# Service: content-service
+#
+# Service ClusterIP per content-service.
+# Espone il workload soltanto all'interno del cluster e seleziona i Pod tramite label.
+apiVersion: v1
+kind: Service
+metadata:
+  name: content-service
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/name: content-service
+spec:
+  selector:
+    app.kubernetes.io/name: content-service
+  ports:
+    - name: http
+      port: 4007
+      targetPort: http
+  type: ClusterIP

@@ -1,0 +1,1 @@
+const names=['auth','user','habits','goals','routine','focus','content','community','subscription','notification'];export const serviceList=names.map((name,index)=>({name,url:process.env[`${name.toUpperCase()}_SERVICE_URL`]||`http://${name}-service:${4001+index}/graphql`}));

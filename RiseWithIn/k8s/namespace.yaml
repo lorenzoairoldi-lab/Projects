@@ -1,0 +1,11 @@
+# Namespace: risewithin
+#
+# Namespace dedicato alla piattaforma RiseWithin.
+# Isola logicamente tutte le risorse applicative e di monitoraggio.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: risewithin
+  labels:
+    app.kubernetes.io/part-of: risewithin
+    app.kubernetes.io/managed-by: kubectl

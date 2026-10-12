@@ -1,0 +1,27 @@
+# ConfigMap: platform-config
+#
+# ConfigMap platform-config.
+# Contiene configurazione non sensibile consumata dai workload della piattaforma.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-config
+  namespace: risewithin
+  labels:
+    app.kubernetes.io/part-of: risewithin
+data:
+  NODE_ENV: production
+  CORS_ORIGINS: 'https://risewithin.example.com'
+  RATE_LIMIT: '200'
+  REDIS_URL: 'redis://redis:6379'
+  RABBITMQ_URL: 'amqp://risewithin:change-me@rabbitmq:5672'
+  AUTH_SERVICE_URL: 'http://auth-service:4001/graphql'
+  USER_SERVICE_URL: 'http://user-service:4002/graphql'
+  HABITS_SERVICE_URL: 'http://habits-service:4003/graphql'
+  GOALS_SERVICE_URL: 'http://goals-service:4004/graphql'
+  ROUTINE_SERVICE_URL: 'http://routine-service:4005/graphql'
+  FOCUS_SERVICE_URL: 'http://focus-service:4006/graphql'
+  CONTENT_SERVICE_URL: 'http://content-service:4007/graphql'
+  COMMUNITY_SERVICE_URL: 'http://community-service:4008/graphql'
+  SUBSCRIPTION_SERVICE_URL: 'http://subscription-service:4009/graphql'
+  NOTIFICATION_SERVICE_URL: 'http://notification-service:4010/graphql'

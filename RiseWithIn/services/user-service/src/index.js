@@ -1,0 +1,1 @@
+import {startSubgraph} from '../../../shared/server.js';import typeDefs from './schema.js';import resolvers from './resolvers.js';import{initUser}from'./models/userModel.js';startSubgraph({serviceName:'user-service',port:Number(process.env.PORT||4002),typeDefs,resolvers,initialize:initUser});
